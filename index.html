@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>확률 룰렛</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        h1 {
+            color: white;
+            font-size: 48px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .money-display {
+            color: #ffd700;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.3);
+            padding: 15px 30px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+
+        .bet-section {
+            margin-bottom: 20px;
+        }
+
+        .bet-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .bet-btn {
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            background: white;
+            color: #667eea;
+            border: 2px solid white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .bet-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .bet-btn.active {
+            background: #ffd700;
+            border-color: #ffd700;
+        }
+
+        .current-bet {
+            color: white;
+            font-size: 20px;
+            margin-top: 10px;
+        }
+
+        .slot-container {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .pointer-left, .pointer-right {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            z-index: 10;
+        }
+
+        .pointer-left {
+            left: -20px;
+            border-top: 20px solid transparent;
+            border-bottom: 20px solid transparent;
+            border-left: 30px solid #ff6b6b;
+        }
+
+        .pointer-right {
+            right: -20px;
+            border-top: 20px solid transparent;
+            border-bottom: 20px solid transparent;
+            border-right: 30px solid #ff6b6b;
+        }
+
+        .slot-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .slot-items {
+            position: absolute;
+            width: 100%;
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+        }
+
+        .slot-item {
+            width: 100%;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .spin-btn {
+            margin-top: 50px;
+            padding: 20px 60px;
+            font-size: 24px;
+            font-weight: bold;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .spin-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .spin-btn:active {
+            transform: scale(0.95);
+        }
+
+        .spin-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 30px;
+            font-size: 32px;
+            color: white;
+            font-weight: bold;
+            min-height: 40px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>행운의 룰렛</h1>
+        <div class="money-display">💰 보유금액: <span id="money">10000</span>원</div>
+        
+        <div class="bet-section">
+            <div class="bet-buttons">
+                <button class="bet-btn" data-bet="100">100원</button>
+                <button class="bet-btn active" data-bet="500">500원</button>
+                <button class="bet-btn" data-bet="1000">1000원</button>
+                <button class="bet-btn" data-bet="5000">5000원</button>
+            </div>
+            <div class="current-bet">배팅금액: <span id="currentBet">500</span>원</div>
+        </div>
+        
+        <div class="slot-container">
+            <div class="pointer-left"></div>
+            <div class="pointer-right"></div>
+            <div class="slot-wrapper">
+                <div class="slot-items" id="slotItems"></div>
+            </div>
+        </div>
+        <button class="spin-btn" id="spinBtn">돌리기!</button>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 여기를 수정하세요! 확률 설정 부분
+        // ==========================================
+        const items = [
+            { name: '꽝', probability: 55, color: '#95a5a6', multiplier: 0, bonus: false },           // 55%
+            { name: '당첨', probability: 42.5, color: '#4ecdc4', multiplier: 2, bonus: false },       // 42.5%
+            { name: '보너스', probability: 2.5, color: '#ffd700', multiplier: 2, bonus: true },       // 2.5% (2배 + 한판 더!)
+        ];
+        
+        // 수정 방법:
+        // name: 표시될 이름
+        // probability: 확률 (전체 합계가 100이 되도록!)
+        // color: 색상
+        // multiplier: 배당 (배팅액에 곱할 숫자)
+        // bonus: 한판 더 여부 (true면 무료 한판 더)
+        // ==========================================
+
+        const slotItems = document.getElementById('slotItems');
+        const spinBtn = document.getElementById('spinBtn');
+        const resultDiv = document.getElementById('result');
+        const moneyDisplay = document.getElementById('money');
+        const currentBetDisplay = document.getElementById('currentBet');
+        const betButtons = document.querySelectorAll('.bet-btn');
+
+        let isSpinning = false;
+        const itemHeight = 110;
+        let money = 10000; // 시작 금액
+        let currentBet = 500; // 기본 배팅액
+        let freeSpins = 0; // 무료 스핀 횟수
+
+        // 배팅 버튼 클릭
+        betButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (isSpinning) return;
+                
+                betButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentBet = parseInt(btn.dataset.bet);
+                currentBetDisplay.textContent = currentBet;
+            });
+        }); // 아이템 높이 + 마진
+
+        // 슬롯 아이템 생성
+        function createSlots() {
+            slotItems.innerHTML = '';
+            
+            // 충분한 아이템 생성 (위아래로 여유있게)
+            const repeatCount = 20;
+            for (let i = 0; i < repeatCount; i++) {
+                items.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'slot-item';
+                    div.style.background = item.color;
+                    div.textContent = item.name;
+                    slotItems.appendChild(div);
+                });
+            }
+        }
+
+        // 확률에 따라 결과 선택
+        function selectResult() {
+            const totalProbability = items.reduce((sum, item) => sum + item.probability, 0);
+            let random = Math.random() * totalProbability;
+            
+            for (let i = 0; i < items.length; i++) {
+                random -= items[i].probability;
+                if (random <= 0) {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+        // 슬롯 돌리기
+        function spin() {
+            if (isSpinning) return;
+            
+            // 무료 스핀이 아니면 돈 체크
+            if (freeSpins === 0) {
+                if (money < currentBet) {
+                    resultDiv.textContent = '💸 돈이 부족해요!';
+                    return;
+                }
+                // 배팅액 차감
+                money -= currentBet;
+                moneyDisplay.textContent = money;
+            } else {
+                freeSpins--;
+            }
+            
+            isSpinning = true;
+            spinBtn.disabled = true;
+            resultDiv.textContent = freeSpins > 0 ? '🎁 무료 스핀!' : '';
+            
+            const resultIndex = selectResult();
+            const resultItem = items[resultIndex];
+            
+            // 중간 위치로 시작
+            const startPosition = -itemHeight * items.length * 5;
+            slotItems.style.transition = 'none';
+            slotItems.style.transform = `translateY(${startPosition}px)`;
+            
+            setTimeout(() => {
+                // 여러 바퀴 돌고 결과 위치로
+                const spins = 5;
+                const centerOffset = 145;
+                const finalPosition = startPosition - (itemHeight * items.length * spins) - (itemHeight * resultIndex) + centerOffset;
+                
+                slotItems.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+                slotItems.style.transform = `translateY(${finalPosition}px)`;
+                
+                setTimeout(() => {
+                    isSpinning = false;
+                    spinBtn.disabled = false;
+                    
+                    // 상금 계산
+                    const winAmount = Math.floor(currentBet * resultItem.multiplier);
+                    money += winAmount;
+                    moneyDisplay.textContent = money;
+                    
+                    // 보너스 체크
+                    if (resultItem.bonus) {
+                        freeSpins++;
+                        resultDiv.textContent = `🎊 보너스 대박! +${winAmount}원 + 무료 한판 더! 🎁`;
+                    } else if (winAmount > currentBet) {
+                        resultDiv.textContent = `🎉 ${resultItem.name}! +${winAmount - currentBet}원 획득!`;
+                    } else if (winAmount > 0) {
+                        resultDiv.textContent = `${resultItem.name}! ±0원 (본전)`;
+                    } else {
+                        resultDiv.textContent = `😢 ${resultItem.name}! -${currentBet}원`;
+                    }
+                    
+                    // 파산 체크
+                    if (money <= 0 && freeSpins === 0) {
+                        setTimeout(() => {
+                            alert('파산했어요! 게임을 새로고침하세요.');
+                        }, 500);
+                    }
+                }, 4000);
+            }, 50);
+        }
+
+        // 초기화
+        createSlots();
+        spinBtn.addEventListener('click', spin);
+    </script>
+</body>
+</html>
